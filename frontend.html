@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Simple E-commerce Frontend</title>
+  <style>
+    .hidden { display: none !important; }
+    :root {
+      --primary: #2d72d9;
+      --primary-dark: #1a4e8a;
+      --accent: #f5f7fa;
+      --border: #e0e0e0;
+      --danger: #e74c3c;
+      --success: #27ae60;
+      --admin: #b00;
+    }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--accent);
+      
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 700px;
+      margin: 40px auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      padding: 32px 24px 24px 24px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5em;
+      letter-spacing: -1px;
+    }
+    h2 {
+      margin-top: 2em;
+      margin-bottom: 0.5em;
+      font-size: 1.3rem;
+      color: var(--primary-dark);
+    }
+    .admin {
+      color: var(--admin);
+    }
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 1em;
+      align-items: center;
+    }
+    input, select {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 1rem;
+      outline: none;
+      transition: border 0.2s;
+      background: #fafbfc;
+    }
+    input:focus, select:focus {
+      border: 1.5px solid var(--primary);
+    }
+    button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 18px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+      box-shadow: 0 2px 8px rgba(45,114,217,0.08);
+    }
+    button:hover, button:focus {
+      background: var(--primary-dark);
+    }
+    .product, .cart-item, .order {
+      background: #fafbfc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .product input[type='number'], .cart-item input[type='number'] {
+      width: 60px;
+      margin-left: 8px;
+    }
+    .actions {
+      margin-top: 8px;
+    }
+    .actions button {
+      margin-right: 8px;
+    }
+    .pagination {
+      margin: 12px 0 0 0;
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .pagination button {
+      background: #fff;
+      color: var(--primary-dark);
+      border: 1px solid var(--primary);
+      padding: 4px 12px;
+      font-size: 1rem;
+      border-radius: 4px;
+      box-shadow: none;
+    }
+    .pagination button:disabled {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      cursor: default;
+    }
+    #logout-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.5em;
+    }
+    #user-info {
+      font-weight: 500;
+      color: var(--primary-dark);
+    }
+    .error {
+      color: var(--danger);
+      font-weight: 500;
+      margin-bottom: 1em;
+    }
+    .success {
+      color: var(--success);
+      font-weight: 500;
+      margin-bottom: 1em;
+    }
+    @media (max-width: 600px) {
+      .container {
+        padding: 10px 2vw;
+      }
+      form {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .product, .cart-item, .order {
+        padding: 12px 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Simple E-commerce</h1>
+  <div id="messages"></div>
+
+  <!-- Auth Forms -->
+  <div id="auth-forms">
+    <h2>Register</h2>
+    <form id="register-form">
+      <input type="text" id="register-username" placeholder="Username" required>
+      <input type="password" id="register-password" placeholder="Password" required>
+      <select id="register-role">
+        <option value="customer">Customer</option>
+        <option value="admin">Admin</option>
+      </select>
+      <button type="submit">Register</button>
+    </form>
+    <h2>Login</h2>
+    <form id="login-form">
+      <input type="text" id="login-username" placeholder="Username" required>
+      <input type="password" id="login-password" placeholder="Password" required>
+      <button type="submit">Login</button>
+    </form>
+  </div>
+
+  <!-- Logout -->
+  <div id="logout-section" class="hidden">
+    <span id="user-info"></span>
+    <button id="logout-btn">Logout</button>
+  </div>
+
+  <!-- Product Search & Pagination -->
+  <div id="product-search-section" class="hidden">
+    <h2>Products</h2>
+    <form id="search-form">
+      <input type="text" id="search-name" placeholder="Search by name">
+      <input type="text" id="search-category" placeholder="Category">
+      <button type="submit">Search</button>
+    </form>
+    <div id="product-list"></div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <!-- Admin Product Management -->
+  <div id="admin-section" class="hidden">
+    <h2 class="admin">Admin: Manage Products</h2>
+    <form id="add-product-form">
+      <input type="text" id="add-product-name" placeholder="Name" required>
+      <input type="text" id="add-product-category" placeholder="Category" required>
+      <input type="number" id="add-product-price" placeholder="Price" required step="0.01">
+      <button type="submit">Add Product</button>
+    </form>
+    <div id="admin-product-list"></div>
+  </div>
+
+  <!-- Cart -->
+  <div id="cart-section" class="hidden">
+    <h2>Your Cart</h2>
+    <div id="cart-list"></div>
+    <button id="place-order-btn">Place Order</button>
+  </div>
+
+  <!-- Orders -->
+  <div id="orders-section" class="hidden">
+    <h2>Your Orders</h2>
+    <div id="orders-list"></div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'http://localhost:3000';
+let token = localStorage.getItem('token') || '';
+let user = JSON.parse(localStorage.getItem('user') || 'null');
+let currentPage = 1;
+let lastSearch = { search: '', category: '' };
+
+function showMessage(msg, type = 'success') {
+  const el = document.getElementById('messages');
+  el.innerHTML = `<div class="${type}">${msg}</div>`;
+  setTimeout(() => { el.innerHTML = ''; }, 3000);
+}
+
+function showError(msg) { showMessage(msg, 'error'); }
+
+function setAuth(newToken, newUser) {
+  token = newToken;
+  user = newUser;
+  localStorage.setItem('token', token);
+  localStorage.setItem('user', JSON.stringify(user));
+}
+
+function clearAuth() {
+  token = '';
+  user = null;
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+}
+
+function showSection(id, show) {
+  document.getElementById(id).classList.toggle('hidden', !show);
+}
+
+function updateUI() {
+  showSection('auth-forms', !token);
+  showSection('logout-section', !!token);
+  showSection('product-search-section', !!token);
+  showSection('cart-section', !!token && user && user.role === 'customer');
+  showSection('orders-section', !!token && user && user.role === 'customer');
+  showSection('admin-section', !!token && user && user.role === 'admin');
+  // Hide add product form for customers
+  const addProductForm = document.getElementById('add-product-form');
+  if (addProductForm) {
+    addProductForm.style.display = (user && user.role === 'admin') ? '' : 'none';
+  }
+  if (token) {
+    document.getElementById('user-info').textContent = `Logged in as ${user.username} (${user.role})`;
+  }
+}
+
+// --- Auth ---
+document.getElementById('register-form').onsubmit = async e => {
+  e.preventDefault();
+  const username = document.getElementById('register-username').value;
+  const password = document.getElementById('register-password').value;
+  const role = document.getElementById('register-role').value;
+  try {
+    const res = await fetch(`${API_URL}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password, role })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Register failed');
+    showMessage('Registered! Please login.');
+    updateUI(); // Ensure UI is updated after registration
+  } catch (err) { showError(err.message); }
+};
+
+document.getElementById('login-form').onsubmit = async e => {
+  e.preventDefault();
+  const username = document.getElementById('login-username').value;
+  const password = document.getElementById('login-password').value;
+  try {
+    const res = await fetch(`${API_URL}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Login failed');
+    // Decode JWT payload (not secure, but fine for demo)
+    const payload = JSON.parse(atob(data.token.split('.')[1]));
+    setAuth(data.token, { username: payload.username, role: payload.role, id: payload.id });
+    updateUI();
+    showMessage('Logged in!');
+    loadProducts(1);
+    if (user.role === 'customer') { loadCart(); loadOrders(); }
+    if (user.role === 'admin') { loadAdminProducts(); }
+    // Scroll to product section
+    setTimeout(() => {
+      document.getElementById('product-search-section').scrollIntoView({ behavior: 'smooth' });
+    }, 200);
+  } catch (err) { showError(err.message); }
+};
+
+document.getElementById('logout-btn').onclick = () => {
+  clearAuth();
+  updateUI();
+  showMessage('Logged out!');
+};
+
+// --- Products ---
+async function loadProducts(page = 1, search = '', category = '') {
+  currentPage = page;
+  lastSearch = { search, category };
+  let url = `${API_URL}/products?page=${page}&limit=5`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  if (category) url += `&category=${encodeURIComponent(category)}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const list = document.getElementById('product-list');
+  list.innerHTML = '';
+  data.products.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'product';
+    div.innerHTML = `<b>${p.name}</b> <br>Category: ${p.category} <br>Price: $${p.price.toFixed(2)}`;
+    if (user && user.role === 'customer') {
+      div.innerHTML += `<br><input type='number' min='1' value='1' id='qty-${p.id}' style='width:50px;'> <button onclick='addToCart(${p.id})'>Add to Cart</button>`;
+    }
+    list.appendChild(div);
+  });
+  // Pagination
+  const pag = document.getElementById('pagination');
+  pag.innerHTML = '';
+  const totalPages = Math.ceil(data.total / 5);
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement('button');
+    btn.textContent = i;
+    if (i === page) btn.disabled = true;
+    btn.onclick = () => loadProducts(i, lastSearch.search, lastSearch.category);
+    pag.appendChild(btn);
+  }
+}
+
+window.addToCart = async function(productId) {
+  const qty = parseInt(document.getElementById('qty-' + productId).value);
+  if (!qty || qty < 1) return showError('Quantity must be at least 1');
+  const res = await fetch(`${API_URL}/cart`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ productId, quantity: qty })
+  });
+  const data = await res.json();
+  if (!res.ok) return showError(data.error || 'Add to cart failed');
+  showMessage('Added to cart!');
+  loadCart();
+};
+
+document.getElementById('search-form').onsubmit = e => {
+  e.preventDefault();
+  const search = document.getElementById('search-name').value;
+  const category = document.getElementById('search-category').value;
+  loadProducts(1, search, category);
+};
+
+// --- Cart ---
+async function loadCart() {
+  const res = await fetch(`${API_URL}/cart`, {
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+  const data = await res.json();
+  const list = document.getElementById('cart-list');
+  list.innerHTML = '';
+  if (!data.length) { list.innerHTML = '<i>Cart is empty</i>'; return; }
+  data.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'cart-item';
+    div.innerHTML = `<b>${item.name}</b> (${item.category})<br>Price: $${item.price.toFixed(2)} x <input type='number' min='1' value='${item.quantity}' id='cartqty-${item.product_id}' style='width:50px;'>
+      <button onclick='updateCart(${item.product_id})'>Update</button>
+      <button onclick='removeCart(${item.product_id})'>Remove</button>`;
+    list.appendChild(div);
+  });
+}
+
+window.updateCart = async function(productId) {
+  const qty = parseInt(document.getElementById('cartqty-' + productId).value);
+  if (!qty || qty < 1) return showError('Quantity must be at least 1');
+  const res = await fetch(`${API_URL}/cart/${productId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ quantity: qty })
+  });
+  const data = await res.json();
+  if (!res.ok) return showError(data.error || 'Update failed');
+  showMessage('Cart updated!');
+  loadCart();
+};
+
+window.removeCart = async function(productId) {
+  const res = await fetch(`${API_URL}/cart/${productId}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+  const data = await res.json();
+  if (!res.ok) return showError(data.error || 'Remove failed');
+  showMessage('Removed from cart!');
+  loadCart();
+};
+
+document.getElementById('place-order-btn').onclick = async () => {
+  const res = await fetch(`${API_URL}/orders`, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+  const data = await res.json();
+  if (!res.ok) return showError(data.error || 'Order failed');
+  showMessage('Order placed!');
+  loadCart();
+  loadOrders();
+};
+
+// --- Orders ---
+async function loadOrders() {
+  const res = await fetch(`${API_URL}/orders`, {
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+  const data = await res.json();
+  const list = document.getElementById('orders-list');
+  list.innerHTML = '';
+  if (!data.length) { list.innerHTML = '<i>No orders yet</i>'; return; }
+  data.forEach(order => {
+    const div = document.createElement('div');
+    div.className = 'order';
+    div.innerHTML = `<b>Order #${order.id}</b> (${new Date(order.date).toLocaleString()})<br>Total: $${order.total.toFixed(2)}<br>Items:<ul>` +
+      order.items.map(i => `<li>${i.name} x ${i.quantity} ($${i.price.toFixed(2)})</li>`).join('') + '</ul>';
+    list.appendChild(div);
+  });
+}
+
+// --- Admin Product Management ---
+async function loadAdminProducts() {
+  const res = await fetch(`${API_URL}/products?page=1&limit=1000`);
+  const data = await res.json();
+  const list = document.getElementById('admin-product-list');
+  list.innerHTML = '';
+  data.products.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'product';
+    div.innerHTML = `<b>${p.name}</b> <br>Category: ${p.category} <br>Price: $${p.price.toFixed(2)}<br>
+      <button onclick='showEditProduct(${p.id}, "${p.name}", "${p.category}", ${p.price})'>Edit</button>
+      <button onclick='deleteProduct(${p.id})'>Delete</button>`;
+    list.appendChild(div);
+  });
+}
+
+document.getElementById('add-product-form').onsubmit = async e => {
+  e.preventDefault();
+  const name = document.getElementById('add-product-name').value;
+  const category = document.getElementById('add-product-category').value;
+  const price = parseFloat(document.getElementById('add-product-price').value);
+  const res = await fetch(`${API_URL}/products`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ name, category, price })
+  });
+  const data = await res.json();
+  if (!res.ok) return showError(data.error || 'Add failed');
+  showMessage('Product added!');
+  document.getElementById('add-product-form').reset();
+  loadAdminProducts();
+  loadProducts(currentPage, lastSearch.search, lastSearch.category);
+};
+
+window.showEditProduct = function(id, name, category, price) {
+  const div = document.createElement('div');
+  div.className = 'product';
+  div.innerHTML = `<b>Edit Product #${id}</b><br>
+    <input type='text' id='edit-name' value='${name}'>
+    <input type='text' id='edit-category' value='${category}'>
+    <input type='number' id='edit-price' value='${price}' step='0.01'>
+    <button onclick='editProduct(${id})'>Save</button>
+    <button onclick='loadAdminProducts()'>Cancel</button>`;
+  const list = document.getElementById('admin-product-list');
+  list.innerHTML = '';
+  list.appendChild(div);
+};
+
+window.editProduct = async function(id) {
+  const name = document.getElementById('edit-name').value;
+  const category = document.getElementById('edit-category').value;
+  const price = parseFloat(document.getElementById('edit-price').value);
+  const res = await fetch(`${API_URL}/products/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ name, category, price })
+  });
+  const data = await res.json();
+  if (!res.ok) return showError(data.error || 'Edit failed');
+  showMessage('Product updated!');
+  loadAdminProducts();
+  loadProducts(currentPage, lastSearch.search, lastSearch.category);
+};
+
+window.deleteProduct = async function(id) {
+  if (!confirm('Delete this product?')) return;
+  const res = await fetch(`${API_URL}/products/${id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+  const data = await res.json();
+  if (!res.ok) return showError(data.error || 'Delete failed');
+  showMessage('Product deleted!');
+  loadAdminProducts();
+  loadProducts(currentPage, lastSearch.search, lastSearch.category);
+};
+
+// --- Initial UI ---
+// Always hide protected sections on page load
+updateUI();
+if (token) {
+  loadProducts(1);
+  if (user.role === 'customer') { loadCart(); loadOrders(); }
+  if (user.role === 'admin') { loadAdminProducts(); }
+}
+</script>
+</body>
+</html> 
